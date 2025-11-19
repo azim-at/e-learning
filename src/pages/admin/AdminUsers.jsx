@@ -1,20 +1,57 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import axios from 'axios'
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState([
-    { id: 1, name: 'John Doe', email: 'john@example.com', enrolledCourses: 3, certificates: 1, joined: '2024-01-15' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', enrolledCourses: 5, certificates: 3, joined: '2024-02-20' },
-    { id: 3, name: 'Mike Wilson', email: 'mike@example.com', enrolledCourses: 2, certificates: 0, joined: '2024-03-10' },
-    { id: 4, name: 'Sarah Johnson', email: 'sarah@example.com', enrolledCourses: 4, certificates: 2, joined: '2024-01-28' }
-  ])
-
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [viewUser, setViewUser] = useState(null)
+  const [deleteUser, setDeleteUser] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
 
+  // Fetch users from backend
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true)
+      const { data } = await axios.get('/admin/users')
+      setUsers(data)
+      setError('')
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      setError(error.response?.data?.message || 'Failed to load users')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteUser = async (userId) => {
+    try {
+      await axios.delete(`/admin/users/${userId}`)
+      setUsers(users.filter(user => user._id !== userId))
+      setDeleteUser(null)
+      setError('')
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      setError(error.response?.data?.message || 'Failed to delete user')
+    }
+  }
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
   const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
@@ -71,41 +108,111 @@ export default function AdminUsers() {
 
           {/* Main Content */}
           <div className="col-md-9 col-lg-10">
+            {/* Error Alert */}
+            {error && (
+              <div className="alert alert-danger alert-dismissible fade show" role="alert">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-exclamation-triangle-fill me-2" viewBox="0 0 16 16">
+                  <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                </svg>
+                {error}
+                <button type="button" className="btn-close" onClick={() => setError('')}></button>
+              </div>
+            )}
+
             <div className="card border-0 shadow-sm">
               <div className="card-body p-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                  <h5 className="fw-bold mb-0">All Users ({users.length})</h5>
-                  <input type="search" className="form-control w-auto" placeholder="Search users..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  <h5 className="fw-bold mb-0">
+                    All Users ({filteredUsers.length})
+                    {loading && <span className="spinner-border spinner-border-sm ms-2" role="status"></span>}
+                  </h5>
+                  <input
+                    type="search"
+                    className="form-control w-auto"
+                    placeholder="Search users..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
 
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Enrolled Courses</th>
-                        <th>Certificates</th>
-                        <th>Joined Date</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredUsers.map((user) => (
-                        <tr key={user.id}>
-                          <td><strong>{user.name}</strong></td>
-                          <td>{user.email}</td>
-                          <td>{user.enrolledCourses}</td>
-                          <td>{user.certificates}</td>
-                          <td>{user.joined}</td>
-                          <td>
-                            <button className="btn btn-sm btn-outline-primary" onClick={() => setViewUser(user)}>View Details</button>
-                          </td>
+                {loading ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                    <p className="mt-3 text-muted">Loading users...</p>
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="text-center py-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" className="bi bi-people text-muted mb-3" viewBox="0 0 16 16">
+                      <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0M6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816M4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0m3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4"/>
+                    </svg>
+                    <p className="text-muted">
+                      {searchTerm ? 'No users found matching your search.' : 'No users registered yet.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-hover">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Role</th>
+                          <th>Enrolled Courses</th>
+                          <th>Joined Date</th>
+                          <th>Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {filteredUsers.map((user) => (
+                          <tr key={user._id}>
+                            <td>
+                              <div className="d-flex align-items-center">
+                                <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: '32px', height: '32px', fontSize: '14px' }}>
+                                  {user.name?.charAt(0).toUpperCase()}
+                                </div>
+                                <strong>{user.name}</strong>
+                              </div>
+                            </td>
+                            <td>{user.email}</td>
+                            <td>
+                              <span className={`badge ${user.role === 'admin' ? 'bg-danger' : 'bg-primary'}`}>
+                                {user.role}
+                              </span>
+                            </td>
+                            <td>{user.enrolledCourses?.length || 0}</td>
+                            <td>{formatDate(user.createdAt)}</td>
+                            <td>
+                              <div className="btn-group btn-group-sm">
+                                <button
+                                  className="btn btn-outline-primary"
+                                  onClick={() => setViewUser(user)}
+                                  title="View Details"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="bi bi-eye" viewBox="0 0 16 16">
+                                    <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                                    <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+                                  </svg>
+                                </button>
+                                <button
+                                  className="btn btn-outline-danger"
+                                  onClick={() => setDeleteUser(user)}
+                                  title="Delete User"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="bi bi-trash" viewBox="0 0 16 16">
+                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                                  </svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -115,23 +222,111 @@ export default function AdminUsers() {
       {/* User Details Modal */}
       {viewUser && (
         <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setViewUser(null)}>
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">User Details</h5>
+                <h5 className="modal-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-person-circle me-2" viewBox="0 0 16 16">
+                    <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+                    <path fillRule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+                  </svg>
+                  User Details
+                </h5>
                 <button type="button" className="btn-close" onClick={() => setViewUser(null)}></button>
               </div>
               <div className="modal-body">
                 <div className="row g-3">
-                  <div className="col-12"><strong>Name:</strong> {viewUser.name}</div>
-                  <div className="col-12"><strong>Email:</strong> {viewUser.email}</div>
-                  <div className="col-6"><strong>Enrolled Courses:</strong> {viewUser.enrolledCourses}</div>
-                  <div className="col-6"><strong>Certificates:</strong> {viewUser.certificates}</div>
-                  <div className="col-12"><strong>Joined:</strong> {viewUser.joined}</div>
+                  <div className="col-12">
+                    <div className="d-flex align-items-center mb-3">
+                      <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '60px', height: '60px', fontSize: '24px' }}>
+                        {viewUser.name?.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h6 className="mb-0">{viewUser.name}</h6>
+                        <small className="text-muted">{viewUser.email}</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-12"><hr /></div>
+                  <div className="col-6">
+                    <strong>Role:</strong>
+                    <div>
+                      <span className={`badge ${viewUser.role === 'admin' ? 'bg-danger' : 'bg-primary'}`}>
+                        {viewUser.role}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <strong>Enrolled Courses:</strong>
+                    <div>{viewUser.enrolledCourses?.length || 0}</div>
+                  </div>
+                  <div className="col-6">
+                    <strong>Phone:</strong>
+                    <div>{viewUser.phone || 'Not provided'}</div>
+                  </div>
+                  <div className="col-6">
+                    <strong>Location:</strong>
+                    <div>{viewUser.location || 'Not provided'}</div>
+                  </div>
+                  <div className="col-12">
+                    <strong>Website:</strong>
+                    <div>{viewUser.website || 'Not provided'}</div>
+                  </div>
+                  <div className="col-12">
+                    <strong>Bio:</strong>
+                    <div>{viewUser.bio || 'No bio available'}</div>
+                  </div>
+                  <div className="col-12">
+                    <strong>Joined:</strong>
+                    <div>{formatDate(viewUser.createdAt)}</div>
+                  </div>
                 </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setViewUser(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteUser && (
+        <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setDeleteUser(null)}>
+          <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content">
+              <div className="modal-header bg-danger text-white">
+                <h5 className="modal-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-exclamation-triangle-fill me-2" viewBox="0 0 16 16">
+                    <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                  </svg>
+                  Confirm Deletion
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setDeleteUser(null)}></button>
+              </div>
+              <div className="modal-body">
+                <p className="mb-0">
+                  Are you sure you want to delete user <strong>{deleteUser.name}</strong> ({deleteUser.email})?
+                </p>
+                <p className="text-danger small mt-2 mb-0">
+                  <strong>Warning:</strong> This action cannot be undone.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setDeleteUser(null)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => handleDeleteUser(deleteUser._id)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-trash me-1" viewBox="0 0 16 16">
+                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                  </svg>
+                  Delete User
+                </button>
               </div>
             </div>
           </div>

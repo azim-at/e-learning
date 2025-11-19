@@ -1,8 +1,70 @@
-import React from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 import CourseSlider from '../components/CourseSlider'
 import { Feature } from '../components/Feature'
 
 export default function Dashboard() {
+  const [courses, setCourses] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await axios.get('/courses')
+        // Limit to 6-8 courses for dashboard display
+        const displayCourses = response.data.slice(0, 8)
+        setCourses(displayCourses)
+      } catch (err) {
+        console.error('Error fetching courses:', err)
+        setError('Failed to load courses. Please try again later.')
+        // Set empty array on error to avoid showing undefined
+        setCourses([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCourses()
+  }, [])
+
+  const handleCourseClick = (courseId) => {
+    navigate(`/course/${courseId}`)
+  }
+
+  const renderStars = (rating) => {
+    const stars = []
+    const fullStars = Math.floor(rating)
+    const hasHalfStar = rating % 1 !== 0
+
+    for (let i = 0; i < 5; i++) {
+      if (i < fullStars) {
+        stars.push(
+          <svg key={i} xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#FFC107" className="bi bi-star-fill" viewBox="0 0 16 16">
+            <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 3.528 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z" />
+          </svg>
+        )
+      } else if (i === fullStars && hasHalfStar) {
+        stars.push(
+          <svg key={i} xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#FFC107" className="bi bi-star-half" viewBox="0 0 16 16">
+            <path d="M5.354 5.119 7.538.792A.516.516 0 0 1 8 .5c.183 0 .366.097.465.292l2.184 3.528 3.897.557c.412.058.614.406.423.812l-2.906 2.77.694 3.957a.516.516 0 0 1-.806.534L8 13.187l-3.591 1.852a.516.516 0 0 1-.814-.546l.738-4.315L1.254 6.742c-.19-.205-.04-.583.227-.667l3.873-.552z" />
+          </svg>
+        )
+      } else {
+        stars.push(
+          <svg key={i} xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#D3D3D3" className="bi bi-star" viewBox="0 0 16 16">
+            <path d="M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288L8 2.223l1.847 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.565.565 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z" />
+          </svg>
+        )
+      }
+    }
+    return stars
+  }
+
   return (
    <>
       <section className="py-xl-8 py-6 my-5">
@@ -132,8 +194,157 @@ export default function Dashboard() {
       </div>
     </section>
 
+    {/* Featured Courses Section */}
+    <section className="py-xl-8 py-6 my-5">
+      <div className="container">
+        <div className="row mb-lg-10 mb-6">
+          <div className="col-xl-8 col-lg-8 col-md-12">
+            <h2 className="h1 fw-bold mb-2">Featured Courses</h2>
+            <p className="lead text-muted mb-0">Explore our most popular and highly-rated courses</p>
+          </div>
+        </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading courses...</span>
+            </div>
+            <p className="mt-3 text-muted">Loading courses...</p>
+          </div>
+        )}
 
+        {/* Error State */}
+        {error && (
+          <div className="alert alert-warning alert-dismissible fade show" role="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-exclamation-triangle-fill me-2" viewBox="0 0 16 16">
+              <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0l-5.708 9.762a1.13 1.13 0 0 0 .977 1.672H13.6a1.13 1.13 0 0 0 .977-1.672L8.982 1.566zM8 5a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 5zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
+            </svg>
+            {error}
+            <button type="button" className="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        )}
+
+        {/* Courses Grid */}
+        {!loading && courses.length > 0 && (
+          <div className="row g-4">
+            {courses.map((course) => (
+              <div key={course._id || course.id} className="col-lg-3 col-md-6 col-12">
+                <div
+                  className="card h-100 shadow-sm cursor-pointer transition-all"
+                  onClick={() => handleCourseClick(course._id || course.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      handleCourseClick(course._id || course.id)
+                    }
+                  }}
+                  style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-5px)'
+                    e.currentTarget.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.15)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)'
+                  }}
+                >
+                  {/* Course Thumbnail */}
+                  <div className="position-relative" style={{ overflow: 'hidden', height: '200px' }}>
+                    <img
+                      src={course.thumbnail || 'https://via.placeholder.com/400x200?text=Course'}
+                      alt={course.title}
+                      className="card-img-top"
+                      style={{
+                        objectFit: 'cover',
+                        height: '100%',
+                        width: '100%'
+                      }}
+                    />
+                    {/* Category Badge */}
+                    {course.category && (
+                      <span className="position-absolute top-0 start-0 badge bg-primary m-2">
+                        {course.category}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="card-body d-flex flex-column">
+                    {/* Title */}
+                    <h5 className="card-title fw-semibold text-truncate" title={course.title}>
+                      {course.title}
+                    </h5>
+
+                    {/* Instructor */}
+                    <p className="card-text text-muted small mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" className="bi bi-person-fill me-1" viewBox="0 0 16 16">
+                        <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                      </svg>
+                      {course.instructor || 'Expert Instructor'}
+                    </p>
+
+                    {/* Rating and Students */}
+                    <div className="d-flex align-items-center justify-content-between mb-3">
+                      <div className="d-flex gap-1">
+                        {renderStars(course.rating || 0)}
+                        <small className="text-muted ms-1">
+                          ({course.reviews || 0})
+                        </small>
+                      </div>
+                    </div>
+
+                    {/* Students Count */}
+                    {course.students !== undefined && (
+                      <p className="card-text text-muted small mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" className="bi bi-people-fill me-1" viewBox="0 0 16 16">
+                          <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7Zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm.168-10a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 0 1h-.5v.5a.5.5 0 0 1-1 0v-.5h-.5a.5.5 0 0 1 0-1h.5v-.5a.5.5 0 0 1 .5-.5Z" />
+                        </svg>
+                        {course.students.toLocaleString()} students
+                      </p>
+                    )}
+
+                    {/* Price and CTA */}
+                    <div className="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
+                      <div>
+                        {course.price ? (
+                          <div>
+                            <h6 className="mb-0 fw-bold text-primary">
+                              ${course.price.toFixed(2)}
+                            </h6>
+                            {course.originalPrice && course.originalPrice > course.price && (
+                              <small className="text-muted text-decoration-line-through">
+                                ${course.originalPrice.toFixed(2)}
+                              </small>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="badge bg-success">Free</span>
+                        )}
+                      </div>
+                      <button className="btn btn-sm btn-primary">
+                        View Course
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && courses.length === 0 && !error && (
+          <div className="text-center py-5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" className="bi bi-inbox text-muted mb-3" viewBox="0 0 16 16">
+              <path d="M4.98 4a.5.5 0 0 0-.39.175l-1.23 1.317A.5.5 0 0 0 2.5 6h.006a.5.5 0 0 0 .38.175h.002l.001-.001.002-.002.003-.003.004-.004A.5.5 0 0 0 3.6 6h10.81a.5.5 0 0 0 .39-.175l1.23-1.317A.5.5 0 0 0 15.02 4H4.98zm14 0h.5a.5.5 0 0 1 .5.5v10a.5.5 0 0 1-.5.5h-.5m0-11H.5m15 11H1m14-11v10" />
+            </svg>
+            <h5 className="text-muted">No courses available</h5>
+            <p className="text-muted">Please check back later for more courses</p>
+          </div>
+        )}
+      </div>
+    </section>
 
     <section className="pb-lg-14 pb-6 my-5">
                           <div className="container">

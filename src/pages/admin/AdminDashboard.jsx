@@ -1,13 +1,34 @@
 import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 
 export default function AdminDashboard() {
-  const stats = {
-    totalCourses: 45,
-    totalUsers: 1250,
-    activeCourses: 38,
-    certificatesIssued: 487,
-    revenue: '$24,500',
-    newUsersThisMonth: 89
+  const [stats, setStats] = useState({
+    totalCourses: 0,
+    totalUsers: 0,
+    activeCourses: 0,
+    certificatesIssued: 0,
+    newUsersThisMonth: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetchStats()
+  }, [])
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true)
+      const { data } = await axios.get('/admin/stats')
+      setStats(data)
+      setError('')
+    } catch (error) {
+      console.error('Error fetching stats:', error)
+      setError(error.response?.data?.message || 'Failed to load statistics')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const recentActivities = [
@@ -88,6 +109,24 @@ export default function AdminDashboard() {
               <p className="text-muted">Here's what's happening with your platform today.</p>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Error:</strong> {error}
+                <button type="button" className="btn-close" onClick={() => setError('')}></button>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {loading ? (
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="mt-3 text-muted">Loading dashboard statistics...</p>
+              </div>
+            ) : (
+              <>
             {/* Stats Cards - Modern Design */}
             <div className="row g-4 mb-4">
               {/* Total Courses */}
@@ -280,6 +319,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+            </>
+            )}
           </div>
         </div>
       </div>

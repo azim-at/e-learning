@@ -26,18 +26,20 @@ export default function AdminCourses() {
     'Teaching & Academics'
   ]
 
+  const levels = ['Beginner', 'Intermediate', 'Advanced', 'All Levels']
+
   const [formData, setFormData] = useState({
     title: '',
+    instructor: '',
     price: '',
     description: '',
     category: '',
+    level: 'Beginner',
     duration: '',
-    thumbnail: ''
+    lessons: '',
+    thumbnail: '',
+    language: 'English'
   })
-
-  const [videoLink, setVideoLink] = useState('')
-  const [videoTitle, setVideoTitle] = useState('')
-  const [currentTab, setCurrentTab] = useState('basic') // basic, lessons, additional
 
   const [thumbnailFile, setThumbnailFile] = useState(null)
   const [thumbnailPreview, setThumbnailPreview] = useState('')
@@ -152,25 +154,6 @@ export default function AdminCourses() {
     setMaterials(prev => prev.filter((_, i) => i !== index))
   }
 
-  const addVideoLink = () => {
-    if (!videoLink.trim()) return
-
-    // Detect if it's a YouTube link or regular video
-    const isYouTube = videoLink.includes('youtube.com') || videoLink.includes('youtu.be')
-
-    const newMaterial = {
-      title: videoTitle.trim() || `Lesson ${materials.length + 1}`,
-      type: 'video',
-      url: videoLink,
-      filename: isYouTube ? 'YouTube Video' : 'External Video',
-      size: 0
-    }
-
-    setMaterials(prev => [...prev, newMaterial])
-    setVideoLink('')
-    setVideoTitle('')
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
@@ -206,11 +189,15 @@ export default function AdminCourses() {
     setEditingCourse(course)
     setFormData({
       title: course.title,
+      instructor: course.instructor,
       price: course.price,
       description: course.description,
       category: course.category,
+      level: course.level,
       duration: course.duration,
-      thumbnail: course.thumbnail || ''
+      lessons: course.lessons,
+      thumbnail: course.thumbnail || '',
+      language: course.language || 'English'
     })
     setMaterials(course.materials || [])
     setThumbnailPreview(course.thumbnail || '')
@@ -232,19 +219,20 @@ export default function AdminCourses() {
   const resetForm = () => {
     setFormData({
       title: '',
+      instructor: '',
       price: '',
       description: '',
       category: '',
+      level: 'Beginner',
       duration: '',
-      thumbnail: ''
+      lessons: '',
+      thumbnail: '',
+      language: 'English'
     })
     setEditingCourse(null)
     setThumbnailFile(null)
     setThumbnailPreview('')
     setMaterials([])
-    setVideoLink('')
-    setVideoTitle('')
-    setCurrentTab('basic')
   }
 
   const formatDate = (dateString) => {
@@ -257,6 +245,7 @@ export default function AdminCourses() {
 
   const filteredCourses = courses.filter(course =>
     (course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.instructor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.category?.toLowerCase().includes(searchTerm.toLowerCase())) &&
     (categoryFilter === '' || course.category === categoryFilter)
   )
@@ -388,6 +377,7 @@ export default function AdminCourses() {
                       <thead className="table-light">
                         <tr>
                           <th>Course Title</th>
+                          <th>Instructor</th>
                           <th>Category</th>
                           <th>Students</th>
                           <th>Price</th>
@@ -399,6 +389,7 @@ export default function AdminCourses() {
                         {filteredCourses.map((course) => (
                           <tr key={course._id}>
                             <td><strong>{course.title}</strong></td>
+                            <td>{course.instructor}</td>
                             <td>
                               <span className="badge bg-info text-dark">{course.category}</span>
                             </td>
@@ -444,384 +435,251 @@ export default function AdminCourses() {
         </div>
       </div>
 
-      {/* Create/Edit Course Modal - Modern Design */}
+      {/* Create/Edit Course Modal */}
       {showModal && (
-        <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => { setShowModal(false); resetForm(); }}>
-          <div className="modal-dialog modal-xl modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-content" style={{ borderRadius: '16px', border: 'none' }}>
-              {/* Modern Header */}
-              <div className="modal-header border-0" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '16px 16px 0 0', padding: '1.5rem 2rem' }}>
-                <div>
-                  <h4 className="modal-title text-white fw-bold mb-1">
-                    {editingCourse ? '✏️ Edit Course' : '➕ Create New Course'}
-                  </h4>
-                  <p className="text-white-50 small mb-0">Fill in the details to create an amazing course</p>
-                </div>
-                <button type="button" className="btn-close btn-close-white" onClick={() => { setShowModal(false); resetForm(); }}></button>
+        <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => { setShowModal(false); resetForm(); }}>
+          <div className="modal-dialog modal-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-book me-2" viewBox="0 0 16 16">
+                    <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/>
+                  </svg>
+                  {editingCourse ? 'Edit Course' : 'Create New Course'}
+                </h5>
+                <button type="button" className="btn-close" onClick={() => { setShowModal(false); resetForm(); }}></button>
               </div>
-
               <form onSubmit={handleSubmit}>
-                {/* Modern Tab Navigation */}
-                <div className="px-4 pt-3 border-bottom bg-light">
-                  <ul className="nav nav-pills nav-fill">
-                    <li className="nav-item">
-                      <button
-                        type="button"
-                        className={`nav-link ${currentTab === 'basic' ? 'active' : ''}`}
-                        onClick={() => setCurrentTab('basic')}
-                        style={{ borderRadius: '8px 8px 0 0' }}
-                      >
-                        📝 Basic Info
-                      </button>
-                    </li>
-                    <li className="nav-item">
-                      <button
-                        type="button"
-                        className={`nav-link ${currentTab === 'lessons' ? 'active' : ''}`}
-                        onClick={() => setCurrentTab('lessons')}
-                        style={{ borderRadius: '8px 8px 0 0' }}
-                      >
-                        🎥 Lessons & Videos
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="modal-body" style={{ padding: '2rem', maxHeight: '65vh', overflowY: 'auto' }}>
-
-                  {/* Tab 1: Basic Info */}
-                  {currentTab === 'basic' && (
-                    <div className="row g-4">
-                      <div className="col-12">
-                        <div className="card border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-                          <div className="card-body p-4">
-                            <h6 className="fw-bold mb-3 text-primary">📌 Course Information</h6>
-                            <div className="row g-3">
-                              <div className="col-12">
-                                <label className="form-label fw-semibold">Course Title *</label>
-                                <input
-                                  type="text"
-                                  className="form-control form-control-lg"
-                                  name="title"
-                                  placeholder="e.g., Complete Web Development Bootcamp 2025"
-                                  value={formData.title}
-                                  onChange={handleInputChange}
-                                  required
-                                  style={{ borderRadius: '8px' }}
-                                />
-                              </div>
-                              <div className="col-12">
-                                <label className="form-label fw-semibold">Description *</label>
-                                <textarea
-                                  className="form-control"
-                                  name="description"
-                                  rows="4"
-                                  placeholder="Describe what students will learn in this course..."
-                                  value={formData.description}
-                                  onChange={handleInputChange}
-                                  required
-                                  style={{ borderRadius: '8px' }}
-                                ></textarea>
-                                <small className="text-muted">Write a compelling description (max 1000 characters)</small>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="col-md-6">
-                        <div className="card border-0 shadow-sm h-100" style={{ borderRadius: '12px' }}>
-                          <div className="card-body p-4">
-                            <h6 className="fw-bold mb-3 text-primary">🏷️ Category & Pricing</h6>
-                            <div className="row g-3">
-                              <div className="col-12">
-                                <label className="form-label fw-semibold">Category *</label>
-                                <select
-                                  className="form-select form-select-lg"
-                                  name="category"
-                                  value={formData.category}
-                                  onChange={handleInputChange}
-                                  required
-                                  style={{ borderRadius: '8px' }}
-                                >
-                                  <option value="">Select a category...</option>
-                                  {categories.map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div className="col-12">
-                                <label className="form-label fw-semibold">Price (USD) *</label>
-                                <div className="input-group input-group-lg">
-                                  <span className="input-group-text" style={{ borderRadius: '8px 0 0 8px' }}>$</span>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    className="form-control"
-                                    name="price"
-                                    placeholder="49.99"
-                                    value={formData.price}
-                                    onChange={handleInputChange}
-                                    required
-                                    style={{ borderRadius: '0 8px 8px 0' }}
-                                  />
-                                </div>
-                              </div>
-                              <div className="col-12">
-                                <label className="form-label fw-semibold">Duration *</label>
-                                <input
-                                  type="text"
-                                  className="form-control form-control-lg"
-                                  name="duration"
-                                  placeholder="e.g., 40 hours or 8 weeks"
-                                  value={formData.duration}
-                                  onChange={handleInputChange}
-                                  required
-                                  style={{ borderRadius: '8px' }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="col-md-6">
-                        <div className="card border-0 shadow-sm h-100" style={{ borderRadius: '12px' }}>
-                          <div className="card-body p-4">
-                            <h6 className="fw-bold mb-3 text-primary">🖼️ Course Thumbnail</h6>
-                            <div className="mb-3">
-                              <label className="form-label fw-semibold small">Image URL</label>
-                              <input
-                                type="url"
-                                className="form-control"
-                                name="thumbnail"
-                                placeholder="https://example.com/image.jpg"
-                                value={formData.thumbnail}
-                                onChange={handleInputChange}
-                                style={{ borderRadius: '8px' }}
-                              />
-                            </div>
-                            <div className="text-center my-2 text-muted">OR</div>
-                            <div className="mb-3">
-                              <label className="form-label fw-semibold small">Upload Image</label>
-                              <input
-                                type="file"
-                                className="form-control"
-                                accept="image/*"
-                                onChange={handleThumbnailFileChange}
-                                disabled={uploadingThumbnail}
-                                style={{ borderRadius: '8px' }}
-                              />
-                            </div>
-                            {thumbnailPreview && (
-                              <div className="mt-3 text-center">
-                                <img
-                                  src={thumbnailPreview}
-                                  alt="Preview"
-                                  className="img-thumbnail"
-                                  style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px' }}
-                                />
-                              </div>
-                            )}
-                            {uploadingThumbnail && (
-                              <div className="text-center mt-2">
-                                <div className="spinner-border spinner-border-sm text-primary"></div>
-                                <small className="text-muted d-block">Uploading...</small>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                <div className="modal-body">
+                  <div className="row g-3">
+                    <div className="col-12">
+                      <label className="form-label">Course Title *</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="title"
+                        placeholder="e.g., Complete Web Development Bootcamp"
+                        value={formData.title}
+                        onChange={handleInputChange}
+                        required
+                      />
                     </div>
-                  )}
-
-                  {/* Tab 2: Lessons & Videos */}
-                  {currentTab === 'lessons' && (
-                    <div className="row g-4">
-                      <div className="col-12">
-                        <div className="card border-0 shadow-sm" style={{ borderRadius: '12px', background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)' }}>
-                          <div className="card-body p-4">
-                            <h5 className="fw-bold mb-3">🎥 Add Course Lessons</h5>
-
-                            {/* Video Link Section */}
-                            <div className="card mb-3 border-0 shadow-sm">
-                              <div className="card-body p-4">
-                                <h6 className="fw-bold mb-3">🔗 Add Video from Link</h6>
-                                <div className="row g-3">
-                                  <div className="col-md-5">
-                                    <label className="form-label small fw-semibold">Lesson Title</label>
-                                    <input
-                                      type="text"
-                                      className="form-control"
-                                      placeholder="e.g., Introduction to React"
-                                      value={videoTitle}
-                                      onChange={(e) => setVideoTitle(e.target.value)}
-                                      style={{ borderRadius: '8px' }}
-                                    />
-                                  </div>
-                                  <div className="col-md-7">
-                                    <label className="form-label small fw-semibold">Video URL (YouTube or direct link)</label>
-                                    <div className="input-group">
-                                      <input
-                                        type="url"
-                                        className="form-control"
-                                        placeholder="https://www.youtube.com/watch?v=..."
-                                        value={videoLink}
-                                        onChange={(e) => setVideoLink(e.target.value)}
-                                        style={{ borderRadius: '8px 0 0 8px' }}
-                                      />
-                                      <button
-                                        type="button"
-                                        className="btn btn-primary"
-                                        onClick={addVideoLink}
-                                        disabled={!videoLink.trim()}
-                                        style={{ borderRadius: '0 8px 8px 0' }}
-                                      >
-                                        ➕ Add Lesson
-                                      </button>
-                                    </div>
-                                    <small className="text-muted">Supports YouTube and direct video links</small>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* File Upload Section */}
-                            <div className="card border-0 shadow-sm">
-                              <div className="card-body p-4">
-                                <h6 className="fw-bold mb-3">📤 Or Upload File</h6>
-                                <input
-                                  type="file"
-                                  className="form-control form-control-lg"
-                                  accept=".mp4,.avi,.mov,.wmv,.flv,.mkv,.pdf,.ppt,.pptx,.doc,.docx"
-                                  onChange={handleMaterialFileChange}
-                                  disabled={uploadingMaterial}
-                                  style={{ borderRadius: '8px' }}
-                                />
-                                {uploadingMaterial && (
-                                  <div className="text-center mt-3">
-                                    <div className="spinner-border text-primary"></div>
-                                    <p className="text-muted mt-2">Uploading file...</p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                    <div className="col-12">
+                      <label className="form-label">Description *</label>
+                      <textarea
+                        className="form-control"
+                        name="description"
+                        rows="3"
+                        placeholder="Describe what students will learn in this course..."
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        required
+                      ></textarea>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Instructor Name *</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="instructor"
+                        placeholder="Instructor Name"
+                        value={formData.instructor}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Category *</label>
+                      <select
+                        className="form-select"
+                        name="category"
+                        value={formData.category}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="">Select Category</option>
+                        {categories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Level *</label>
+                      <select
+                        className="form-select"
+                        name="level"
+                        value={formData.level}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        {levels.map(level => (
+                          <option key={level} value={level}>{level}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Price (USD) *</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="form-control"
+                        name="price"
+                        placeholder="49.99"
+                        value={formData.price}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Duration *</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="duration"
+                        placeholder="e.g., 40 hours or 8 weeks"
+                        value={formData.duration}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Number of Lessons *</label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="form-control"
+                        name="lessons"
+                        placeholder="e.g., 150"
+                        value={formData.lessons}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Language</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="language"
+                        placeholder="e.g., English"
+                        value={formData.language}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label">Thumbnail Image</label>
+                      <div className="row g-2">
+                        <div className="col-md-6">
+                          <input
+                            type="url"
+                            className="form-control"
+                            name="thumbnail"
+                            placeholder="Or paste image URL"
+                            value={formData.thumbnail}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="col-md-6">
+                          <div className="input-group">
+                            <input
+                              type="file"
+                              className="form-control"
+                              accept="image/*"
+                              onChange={handleThumbnailFileChange}
+                              disabled={uploadingThumbnail}
+                            />
+                            {uploadingThumbnail && (
+                              <span className="input-group-text">
+                                <span className="spinner-border spinner-border-sm" role="status"></span>
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
-
-                      {/* Lessons List */}
-                      <div className="col-12">
-                        {materials.length > 0 ? (
-                          <div className="card border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-                            <div className="card-body p-4">
-                              <h6 className="fw-bold mb-3">📚 Course Lessons ({materials.length})</h6>
-                              <div className="list-group">
-                                {materials.map((material, index) => (
-                                  <div key={index} className="list-group-item border-0 shadow-sm mb-2" style={{ borderRadius: '8px', background: '#f8f9fa' }}>
-                                    <div className="d-flex justify-content-between align-items-center">
-                                      <div className="d-flex align-items-center flex-grow-1">
-                                        <div className="me-3 text-center" style={{ width: '40px' }}>
-                                          <div className="badge bg-primary rounded-circle" style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
-                                            {index + 1}
-                                          </div>
-                                        </div>
-                                        <div className="flex-grow-1">
-                                          <div className="fw-bold">{material.title}</div>
-                                          <div className="small">
-                                            <span className="badge bg-info text-dark me-2">{material.type}</span>
-                                            {material.size > 0 ? (
-                                              <span className="text-muted">{(material.size / (1024 * 1024)).toFixed(2)} MB</span>
-                                            ) : (
-                                              <span className="text-muted">{material.filename}</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        className="btn btn-sm btn-outline-danger"
-                                        onClick={() => removeMaterial(index)}
-                                        title="Remove lesson"
-                                      >
-                                        🗑️
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center py-5">
-                            <div className="text-muted mb-3" style={{ fontSize: '3rem' }}>📹</div>
-                            <h6 className="text-muted">No lessons added yet</h6>
-                            <p className="text-muted small">Add video links or upload files to create your course content</p>
-                          </div>
+                      {thumbnailPreview && (
+                        <div className="mt-2">
+                          <img
+                            src={thumbnailPreview}
+                            alt="Thumbnail preview"
+                            className="img-thumbnail"
+                            style={{ maxWidth: '200px', maxHeight: '150px' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label">Course Materials (Videos, PDFs, PPTs)</label>
+                      <div className="input-group mb-2">
+                        <input
+                          type="file"
+                          className="form-control"
+                          accept=".mp4,.avi,.mov,.wmv,.flv,.mkv,.pdf,.ppt,.pptx,.doc,.docx"
+                          onChange={handleMaterialFileChange}
+                          disabled={uploadingMaterial}
+                        />
+                        {uploadingMaterial && (
+                          <span className="input-group-text">
+                            <span className="spinner-border spinner-border-sm" role="status"></span>
+                          </span>
                         )}
                       </div>
-                    </div>
-                  )}
-
-                </div>
-                <div className="modal-footer border-0 bg-light" style={{ padding: '1.5rem 2rem', borderRadius: '0 0 16px 16px' }}>
-                  <div className="w-100 d-flex justify-content-between align-items-center">
-                    <div className="text-muted small">
-                      {currentTab === 'basic' && '📝 Step 1 of 2'}
-                      {currentTab === 'lessons' && '🎥 Step 2 of 2'}
-                    </div>
-                    <div>
-                      {currentTab === 'basic' && (
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-lg px-4"
-                          onClick={() => setCurrentTab('lessons')}
-                          style={{ borderRadius: '8px' }}
-                        >
-                          Next: Add Lessons →
-                        </button>
-                      )}
-                      {currentTab === 'lessons' && (
-                        <>
-                          <button
-                            type="button"
-                            className="btn btn-outline-secondary me-2"
-                            onClick={() => setCurrentTab('basic')}
-                            style={{ borderRadius: '8px' }}
-                          >
-                            ← Back
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-secondary me-2"
-                            onClick={() => { setShowModal(false); resetForm(); }}
-                            disabled={submitting}
-                            style={{ borderRadius: '8px' }}
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            className="btn btn-success btn-lg px-4"
-                            disabled={submitting}
-                            style={{ borderRadius: '8px' }}
-                          >
-                            {submitting ? (
-                              <>
-                                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                                {editingCourse ? 'Updating...' : 'Creating...'}
-                              </>
-                            ) : (
-                              <>
-                                ✅ {editingCourse ? 'Update Course' : 'Create Course'}
-                              </>
-                            )}
-                          </button>
-                        </>
+                      {materials.length > 0 && (
+                        <div className="list-group">
+                          {materials.map((material, index) => (
+                            <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                              <div>
+                                <strong>{material.title}</strong>
+                                <span className="badge bg-primary ms-2">{material.type}</span>
+                                <small className="text-muted ms-2">
+                                  {(material.size / (1024 * 1024)).toFixed(2)} MB
+                                </small>
+                              </div>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => removeMaterial(index)}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="bi bi-trash" viewBox="0 0 16 16">
+                                  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                  <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => { setShowModal(false); resetForm(); }}
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                        {editingCourse ? 'Updating...' : 'Creating...'}
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-check-lg me-1" viewBox="0 0 16 16">
+                          <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022"/>
+                        </svg>
+                        {editingCourse ? 'Update Course' : 'Create Course'}
+                      </>
+                    )}
+                  </button>
                 </div>
               </form>
             </div>

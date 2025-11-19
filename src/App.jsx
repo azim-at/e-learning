@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Login from './pages/Login'
@@ -15,71 +17,101 @@ import AdminCertificates from './pages/admin/AdminCertificates'
 function App() {
   return (
     <Router>
-      <Routes>
-        {/* Auth Routes - Without Header/Footer */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
+      <AuthProvider>
+        <Routes>
+          {/* Auth Routes - Without Header/Footer */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
 
-        {/* Dashboard Routes - With Header/Footer */}
-        <Route
-          path="/dashboard"
-          element={
-            <>
-              <Header />
-              <Dashboard />
-              <Footer />
-            </>
-          }
-        />
+          {/* Dashboard Routes - With Header/Footer - Public */}
+          <Route
+            path="/dashboard"
+            element={
+              <>
+                <Header />
+                <Dashboard />
+                <Footer />
+              </>
+            }
+          />
 
-        {/* Courses Route - With Header/Footer */}
-        <Route
-          path="/courses"
-          element={
-            <>
-              <Header />
-              <CourseList />
-              <Footer />
-            </>
-          }
-        />
+          {/* Courses Route - With Header/Footer */}
+          <Route
+            path="/courses"
+            element={
+              <>
+                <Header />
+                <CourseList />
+                <Footer />
+              </>
+            }
+          />
 
-        {/* Course Detail Route - With Header/Footer */}
-        <Route
-          path="/course/:id"
-          element={
-            <>
-              <Header />
-              <CourseDetail />
-              <Footer />
-            </>
-          }
-        />
+          {/* Course Detail Route - With Header/Footer */}
+          <Route
+            path="/course/:id"
+            element={
+              <>
+                <Header />
+                <CourseDetail />
+                <Footer />
+              </>
+            }
+          />
 
-        {/* User Profile Route - With Header/Footer */}
-        <Route
-          path="/profile"
-          element={
-            <>
-              <Header />
-              <UserProfile />
-              <Footer />
-            </>
-          }
-        />
+          {/* User Profile Route - With Header/Footer - Protected */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Header />
+                <UserProfile />
+                <Footer />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Admin Routes - Without Header/Footer */}
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/courses" element={<AdminCourses />} />
-        <Route path="/admin/users" element={<AdminUsers />} />
-        <Route path="/admin/certificates" element={<AdminCertificates />} />
+          {/* Admin Routes - Without Header/Footer - Admin Only */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/courses"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminCourses />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/certificates"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminCertificates />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Default Route - Redirect to Dashboard */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Default Route - Redirect to Dashboard */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-        {/* Catch all - Redirect to Dashboard */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+          {/* Catch all - Redirect to Dashboard */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </AuthProvider>
     </Router>
   )
 }

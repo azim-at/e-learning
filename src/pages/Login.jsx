@@ -1,12 +1,17 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
+  const navigate = useNavigate()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   })
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -16,10 +21,25 @@ export default function Login() {
     }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Add your login logic here
-    console.log('Login data:', formData)
+    setError('')
+    setLoading(true)
+
+    const result = await login(formData.email, formData.password)
+
+    if (result.success) {
+      // Redirect based on user role
+      if (result.user.role === 'admin') {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
+    } else {
+      setError(result.message)
+    }
+
+    setLoading(false)
   }
 
   return (
@@ -40,6 +60,16 @@ export default function Login() {
                   <h2 className="fw-bold mb-2">Welcome Back</h2>
                   <p className="text-muted mb-0">Sign in to continue your learning journey</p>
                 </div>
+
+                {/* Error Alert */}
+                {error && (
+                  <div className="alert alert-danger d-flex align-items-center" role="alert">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-exclamation-triangle-fill me-2" viewBox="0 0 16 16">
+                      <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                    </svg>
+                    {error}
+                  </div>
+                )}
 
                 {/* Login Form */}
                 <form onSubmit={handleSubmit}>
@@ -63,6 +93,7 @@ export default function Login() {
                         value={formData.email}
                         onChange={handleChange}
                         required
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -87,6 +118,7 @@ export default function Login() {
                         value={formData.password}
                         onChange={handleChange}
                         required
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -101,6 +133,7 @@ export default function Login() {
                         name="rememberMe"
                         checked={formData.rememberMe}
                         onChange={handleChange}
+                        disabled={loading}
                       />
                       <label className="form-check-label" htmlFor="rememberMe">
                         Remember me
@@ -113,11 +146,22 @@ export default function Login() {
 
                   {/* Submit Button */}
                   <div className="d-grid mb-3">
-                    <button type="submit" className="btn btn-primary btn-lg">
-                      Sign In
+                    <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
+                      {loading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          Signing In...
+                        </>
+                      ) : (
+                        'Sign In'
+                      )}
                     </button>
                   </div>
 
+                  {/* Admin Login Info */}
+                  <div className="alert alert-info small">
+                    <strong>Admin Login:</strong> admin@elearning.com / admin123
+                  </div>
 
                   {/* Sign Up Link */}
                   <div className="text-center">
